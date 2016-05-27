@@ -1,59 +1,70 @@
-RNING - do not edit this template unless you know what you are doing
+# ----------------------------------------------------------------------
+# WARNING - do not edit this template unless you know what you are doing
 # ----------------------------------------------------------------------
 
 # the parent cache
-cache_peer %PARENTPROXY% parent %PARENTPORT% 7 no-query no-digest no-netdb-exchange default
+
 
 
 # performance options
-pipeline_prefetch %PIPELINE_PREFETCH%
-cache_miss_revalidate %CACHE_MISS_REVALIDATE%
-read_ahead_gap %READ_AHEAD_GAP%
-cache_replacement_policy %CACHE_REPLACEMENT_POLICY%
-memory_replacement_policy %MEMORY_REPLACEMENT_POLICY%
+pipeline_prefetch off
+cache_miss_revalidate on
+read_ahead_gap 16 KB
+cache_replacement_policy lru
+memory_replacement_policy lru
 
 
 # disk and memory cache settings
-cache_dir ufs %CACHEDIR% %CACHESIZE% 16 256
-maximum_object_size %MAXOBJECTSIZE%
-cache_mem %MEMCACHESIZE%
-maximum_object_size_in_memory %MEMMAXOBJECTSIZE%
+
+acl everything src all
+cache deny everything
+maximum_object_size 4 MB
+cache_mem 256 MB
+maximum_object_size_in_memory 512 KB
 
 
 # store coredumps in the first cache dir
-coredump_dir %CACHEDIR%
+coredump_dir /Users/grudkowm/Library/Caches/squid
 
 
 # the hostname squid displays in error messages
-visible_hostname %VISIBLEHOSTNAME%
+visible_hostname localhost
+
+# warning: basic authentication sends passwords plaintext
+# a network sniffer can and will discover passwords
+auth_param basic program /usr/local/squid/libexec/basic_ncsa_auth /etc/squid3/passwords
+auth_param basic realm proxy
+acl AuthorizedUsers proxy_auth REQUIRED
+http_access allow AuthorizedUsers
 
 
 # log & process ID file details
-cache_access_log stdio:%ACCESSLOG%
-cache_store_log stdio:%STORELOG%
-cache_log %CACHELOG%
-pid_filename %PIDFILE%
+cache_access_log stdio:/Users/grudkowm/Library/Logs/squid/squid-access.log
+cache_store_log stdio:/Users/grudkowm/Library/Logs/squid/squid-store.log
+cache_log /Users/grudkowm/Library/Logs/squid/squid-cache.log
+pid_filename /tmp/squid.pid
 
 
 # Squid listening port
-http_port %PORT%
+http_port 8080
 
 
 # Access Control lists
 acl SSL_ports port 443
-acl Safe_ports port 80    # http
-acl Safe_ports port 21    # ftp
-acl Safe_ports port 443   # https
-acl Safe_ports port 70    # gopher
-acl Safe_ports port 210   # wais
-acl Safe_ports port 1025-65535  # unregistered ports
-acl Safe_ports port 280   # http-mgmt
-acl Safe_ports port 488   # gss-http
-acl Safe_ports port 591   # filemaker
-acl Safe_ports port 777   # multiling http
+acl Safe_ports port 80		# http
+acl Safe_ports port 21		# ftp
+acl Safe_ports port 443		# https
+acl Safe_ports port 70		# gopher
+acl Safe_ports port 210		# wais
+acl Safe_ports port 1025-65535	# unregistered ports
+acl Safe_ports port 280		# http-mgmt
+acl Safe_ports port 488		# gss-http
+acl Safe_ports port 591		# filemaker
+acl Safe_ports port 777		# multiling http
 acl CONNECT method CONNECT
-%ALLOWEDHOSTS%
-%DIRECTHOSTS%
+acl allowed src 192.168.1.0/24
+
+
 
 
 # Only allow cachemgr access from localhost
@@ -75,7 +86,7 @@ http_access deny to_localhost
 
 # rules for client access go here
 http_access allow localhost
-%HTTPACCESSALLOWED%
+http_access allow allowed
 
 
 # after allowed hosts, deny all other access to this proxy
@@ -84,16 +95,14 @@ http_access deny all
 
 
 # specify which hosts have direct access (bypassing the parent proxy)
-%ALWAYSDIRECT%
+
 always_direct deny all
 
 
 # refresh patterns (squid-recommended)
-refresh_pattern ^ftp:   1440  20% 10080
-refresh_pattern ^gopher:  1440  0%  1440
-refresh_pattern -i (/cgi-bin/|\?) 0 0%  0
-refresh_pattern .   0 20% 4320
-
-
+refresh_pattern ^ftp:		1440	20%	10080
+refresh_pattern ^gopher:	1440	0%	1440
+refresh_pattern -i (/cgi-bin/|\?) 0	0%	0
+refresh_pattern .		0	20%	4320
 
 
